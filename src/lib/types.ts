@@ -134,6 +134,23 @@ export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
   hidden: '⚪ Ukryta',
 };
 
+// ETAP 13 — galeria
+export interface GalleryImageRow {
+  id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
+}
+
+export interface GalleryAlbumRow {
+  id: string;
+  name: string;
+  slug: string;
+  cover_image_storage_path: string | null;
+  sort_order: number;
+  gallery_images: GalleryImageRow[];
+}
+
 export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
   draft: '📝 Szkic (niewidoczne dla klientów)',
   published: '🟢 Opublikowane',
