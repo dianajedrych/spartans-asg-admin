@@ -6,6 +6,8 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { ProductsList } from './pages/products/ProductsList';
 import { ProductWizard } from './pages/products/ProductWizard';
+import { OrdersList } from './pages/orders/OrdersList';
+import { OrderDetail } from './pages/orders/OrderDetail';
 import { ComingSoon } from './pages/ComingSoon';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -26,7 +28,8 @@ export default function App() {
           <Route path="/products" element={<Protected><ProductsList /></Protected>} />
           <Route path="/products/new" element={<Protected><ProductWizard /></Protected>} />
           <Route path="/products/:id" element={<Protected><ProductWizard /></Protected>} />
-          <Route path="/orders" element={<Protected><ComingSoon title="Zamówienia" /></Protected>} />
+          <Route path="/orders" element={<Protected><OrdersList /></Protected>} />
+          <Route path="/orders/:id" element={<Protected><OrderDetail /></Protected>} />
           <Route path="/customers" element={<Protected><ComingSoon title="Klienci" /></Protected>} />
           <Route path="/events" element={<Protected><ComingSoon title="Wydarzenia" /></Protected>} />
           <Route path="/reviews" element={<Protected><ComingSoon title="Opinie" /></Protected>} />

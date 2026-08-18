@@ -25,3 +25,76 @@ export interface ProductListRow {
   categories: { name: string } | null;
   product_variants: { id: string; inventory: { quantity_on_hand: number; low_stock_threshold: number } | null }[];
 }
+
+export type OrderStatus =
+  | 'new' | 'processing' | 'packed' | 'shipped' | 'delivered'
+  | 'cancelled' | 'returned' | 'refunded';
+
+export interface BuyerSnapshot {
+  imie?: string;
+  nazwisko?: string;
+  telefon?: string;
+  email?: string;
+}
+
+export interface OrderListRow {
+  id: string;
+  order_number: string;
+  status: OrderStatus;
+  total: number;
+  currency: string;
+  delivery_method: string | null;
+  buyer_snapshot: BuyerSnapshot;
+  created_at: string;
+}
+
+export interface OrderItemRow {
+  id: string;
+  product_name_snapshot: string;
+  sku_snapshot: string | null;
+  unit_price_snapshot: number;
+  quantity: number;
+  line_total: number;
+}
+
+export interface OrderStatusHistoryRow {
+  id: string;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
+  note: string | null;
+  created_at: string;
+}
+
+export interface OrderDetailData {
+  id: string;
+  order_number: string;
+  status: OrderStatus;
+  subtotal: number;
+  shipping_cost: number;
+  total: number;
+  currency: string;
+  payment_method: string | null;
+  delivery_method: string | null;
+  buyer_snapshot: BuyerSnapshot;
+  shipping_address_snapshot: Record<string, unknown> | null;
+  invoice_details_snapshot: Record<string, unknown> | null;
+  notes: string | null;
+  created_at: string;
+  order_items: OrderItemRow[];
+  order_status_history: OrderStatusHistoryRow[];
+  // PostgREST zwraca to jako pojedynczy obiekt, nie tablicę — order_id w
+  // shipments ma unique constraint (jedna przesyłka na zamówienie), więc
+  // relacja jest wykrywana jako "do jednego", nie "do wielu".
+  shipments: { tracking_number: string | null; carrier: string | null } | null;
+}
+
+export const STATUS_LABELS: Record<OrderStatus, string> = {
+  new: '🟢 Nowe',
+  processing: '🟡 W realizacji',
+  packed: '📦 Spakowane',
+  shipped: '🚚 Wysłane',
+  delivered: '✅ Dostarczone',
+  cancelled: '❌ Anulowane',
+  returned: '↩️ Zwrócone',
+  refunded: '💰 Zwrot pieniędzy',
+};
