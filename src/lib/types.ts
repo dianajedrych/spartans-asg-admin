@@ -113,6 +113,27 @@ export interface EventListRow {
   capacity: number | null;
 }
 
+// ETAP 12 — opinie produktowe
+export type ReviewStatus = 'pending' | 'published' | 'hidden';
+
+export interface ReviewListRow {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  author_name: string | null;
+  is_verified_purchase: boolean;
+  status: ReviewStatus;
+  created_at: string;
+  products: { name: string } | null;
+}
+
+export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
+  pending: '🟡 Oczekuje na moderację',
+  published: '🟢 Opublikowana',
+  hidden: '⚪ Ukryta',
+};
+
 export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
   draft: '📝 Szkic (niewidoczne dla klientów)',
   published: '🟢 Opublikowane',

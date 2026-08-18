@@ -10,6 +10,7 @@ import { OrdersList } from './pages/orders/OrdersList';
 import { OrderDetail } from './pages/orders/OrderDetail';
 import { EventsList } from './pages/events/EventsList';
 import { EventWizard } from './pages/events/EventWizard';
+import { ReviewsList } from './pages/reviews/ReviewsList';
 import { ComingSoon } from './pages/ComingSoon';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -36,7 +37,7 @@ export default function App() {
           <Route path="/events" element={<Protected><EventsList /></Protected>} />
           <Route path="/events/new" element={<Protected><EventWizard /></Protected>} />
           <Route path="/events/:id" element={<Protected><EventWizard /></Protected>} />
-          <Route path="/reviews" element={<Protected><ComingSoon title="Opinie" /></Protected>} />
+          <Route path="/reviews" element={<Protected><ReviewsList /></Protected>} />
           <Route path="/gallery" element={<Protected><ComingSoon title="Galeria" /></Protected>} />
           <Route path="/settings" element={<Protected><ComingSoon title="Ustawienia" /></Protected>} />
         </Routes>
