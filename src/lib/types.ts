@@ -98,3 +98,24 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   returned: '↩️ Zwrócone',
   refunded: '💰 Zwrot pieniędzy',
 };
+
+// ETAP 11 — wydarzenia. Zapisy zawsze idą przez zewnętrzny link (Google
+// Forms, pole external_form_url) — nie ma tu własnego formularza/listy
+// zapisanych, więc nie ma odpowiednika event_registrations w tym pliku.
+export type EventStatus = 'draft' | 'published' | 'closed' | 'cancelled';
+
+export interface EventListRow {
+  id: string;
+  slug: string;
+  name: string;
+  event_date: string | null;
+  status: EventStatus;
+  capacity: number | null;
+}
+
+export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  draft: '📝 Szkic (niewidoczne dla klientów)',
+  published: '🟢 Opublikowane',
+  closed: '⚪ Zakończone (w archiwum)',
+  cancelled: '❌ Odwołane',
+};
