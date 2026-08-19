@@ -3,6 +3,10 @@
 Panel administracyjny dla sklepu Spartans ASG. Osobna aplikacja (React + TypeScript + Vite),
 gadająca z tym samym projektem Supabase co sklep (`Spartans ASG.dc.html`).
 
+Instrukcja obsługi panelu dla właściciela sklepu (bez kodu, bez SQL) jest w
+[ADMIN_GUIDE.md](https://github.com/dianajedrych/spartans-asg/blob/main/ADMIN_GUIDE.md)
+w repozytorium sklepu.
+
 ## Uruchomienie lokalne
 
 ```bash
