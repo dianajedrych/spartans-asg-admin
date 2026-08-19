@@ -6,6 +6,8 @@ import { EVENT_STATUS_LABELS } from '../../lib/types';
 
 const STATUS_OPTIONS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
 
+interface ContentTab { label: string; body: string; }
+
 export function EventWizard() {
   const { id } = useParams();
   const isEdit = !!id;
@@ -22,20 +24,24 @@ export function EventWizard() {
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
-  const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
   const [status, setStatus] = useState<EventStatus>('draft');
   const [externalFormUrl, setExternalFormUrl] = useState('');
   const [coverImage, setCoverImage] = useState<{ file: File; preview: string } | null>(null);
   const [existingCoverPath, setExistingCoverPath] = useState<string | null>(null);
   const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
+  // Zakładki (np. "Cennik", "Co w cenie", "Mapa", "Wymogi bezpieczeństwa") —
+  // zapisywane w events.content.tabs. Reszta ewentualnej starszej zawartości
+  // tej kolumny (np. "desc" z danych migrowanych) jest zachowywana bez zmian.
+  const [contentTabs, setContentTabs] = useState<ContentTab[]>([]);
+  const [rawContent, setRawContent] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!isEdit || !id) return;
     (async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('name, short_description, event_date, event_time, location, price, capacity, status, external_form_url, cover_image_storage_path')
+        .select('name, short_description, event_date, event_time, location, capacity, status, external_form_url, cover_image_storage_path, content')
         .eq('id', id)
         .single();
       if (error || !data) { setSaveError('Nie udało się wczytać wydarzenia.'); setLoading(false); return; }
@@ -44,7 +50,6 @@ export function EventWizard() {
       setEventDate(data.event_date || '');
       setEventTime(data.event_time ? String(data.event_time).slice(0, 5) : '');
       setLocation(data.location || '');
-      setPrice(data.price != null ? String(data.price) : '');
       setCapacity(data.capacity != null ? String(data.capacity) : '');
       setStatus(data.status);
       setExternalFormUrl(data.external_form_url || '');
@@ -52,9 +57,21 @@ export function EventWizard() {
         setExistingCoverPath(data.cover_image_storage_path);
         setExistingCoverUrl(supabase.storage.from('event-images').getPublicUrl(data.cover_image_storage_path).data.publicUrl);
       }
+      if (data.content && typeof data.content === 'object') {
+        const content = data.content as Record<string, unknown>;
+        setRawContent(content);
+        const tabs = Array.isArray(content.tabs) ? content.tabs as ContentTab[] : [];
+        setContentTabs(tabs.map((t) => ({ label: t.label || '', body: t.body || '' })));
+      }
       setLoading(false);
     })();
   }, [isEdit, id]);
+
+  function addTab() { setContentTabs((prev) => [...prev, { label: '', body: '' }]); }
+  function updateTab(i: number, field: keyof ContentTab, val: string) {
+    setContentTabs((prev) => prev.map((t, idx) => (idx === i ? { ...t, [field]: val } : t)));
+  }
+  function removeTab(i: number) { setContentTabs((prev) => prev.filter((_, idx) => idx !== i)); }
 
   function handleFileSelected(file: File | null | undefined) {
     if (!file) return;
@@ -64,9 +81,9 @@ export function EventWizard() {
   function validate() {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = 'Podaj nazwę wydarzenia.';
-    if (price.trim() && (isNaN(Number(price)) || Number(price) < 0)) errs.price = 'Podaj poprawną cenę (np. 40 lub 40.50).';
     if (capacity.trim() && (!Number.isInteger(Number(capacity)) || Number(capacity) < 0)) errs.capacity = 'Podaj liczbę miejsc (0 lub więcej).';
     if (externalFormUrl.trim() && !/^https?:\/\//i.test(externalFormUrl.trim())) errs.externalFormUrl = 'Link musi zaczynać się od http:// lub https://';
+    if (contentTabs.some((t) => t.label.trim() && !t.body.trim())) errs.tabs = 'Uzupełnij treść każdej dodanej zakładki (albo ją usuń).';
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -76,16 +93,23 @@ export function EventWizard() {
     setSaving(true);
     setSaveError(null);
     try {
+      const cleanTabs = contentTabs
+        .filter((t) => t.label.trim() && t.body.trim())
+        .map((t) => ({ label: t.label.trim(), body: t.body.trim() }));
+      const nextContent: Record<string, unknown> = { ...(rawContent || {}) };
+      if (cleanTabs.length) nextContent.tabs = cleanTabs;
+      else delete nextContent.tabs;
+
       const payload = {
         name: name.trim(),
         short_description: shortDescription.trim() || null,
         event_date: eventDate || null,
         event_time: eventTime || null,
         location: location.trim() || null,
-        price: price.trim() ? Number(price) : null,
         capacity: capacity.trim() ? Number(capacity) : null,
         status,
         external_form_url: externalFormUrl.trim() || null,
+        content: Object.keys(nextContent).length ? nextContent : null,
       };
 
       let eventId = id;
@@ -167,19 +191,11 @@ export function EventWizard() {
           <input id="ev-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="np. Kunickiego 54, Lublin" />
         </div>
 
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          <div className="field" style={{ flex: 1, minWidth: 140 }}>
-            <label htmlFor="ev-price">Cena (zł)</label>
-            <input id="ev-price" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="np. 40" />
-            {fieldErrors.price && <span style={{ color: 'var(--danger)', fontSize: 12 }}>{fieldErrors.price}</span>}
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Zostaw puste, jeśli cena jest jeszcze nieustalona.</span>
-          </div>
-          <div className="field" style={{ flex: 1, minWidth: 140 }}>
-            <label htmlFor="ev-capacity">Limit miejsc</label>
-            <input id="ev-capacity" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="np. 60" />
-            {fieldErrors.capacity && <span style={{ color: 'var(--danger)', fontSize: 12 }}>{fieldErrors.capacity}</span>}
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Zostaw puste, jeśli nie ma limitu.</span>
-          </div>
+        <div className="field" style={{ maxWidth: 220 }}>
+          <label htmlFor="ev-capacity">Limit miejsc</label>
+          <input id="ev-capacity" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="np. 60" />
+          {fieldErrors.capacity && <span style={{ color: 'var(--danger)', fontSize: 12 }}>{fieldErrors.capacity}</span>}
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Zostaw puste, jeśli nie ma limitu.</span>
         </div>
 
         <div className="field">
@@ -189,6 +205,36 @@ export function EventWizard() {
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             To jedyny sposób zapisu na wydarzenie — przycisk „Zapisz się” na stronie zawsze otwiera ten link. Jeśli zostawisz puste, klienci zobaczą informację, że link pojawi się wkrótce — możesz go dodać później.
           </span>
+        </div>
+
+        <div className="field">
+          <label>Zakładki (np. Cennik, Co w cenie, Mapa, Wymogi bezpieczeństwa)</label>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+            Każda zakładka pojawi się na stronie wydarzenia jako osobny przycisk z własną treścią.
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+            {contentTabs.map((tab, i) => (
+              <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    value={tab.label}
+                    onChange={(e) => updateTab(i, 'label', e.target.value)}
+                    placeholder="Nazwa zakładki, np. Cennik"
+                    style={{ flex: 1, fontWeight: 600 }}
+                  />
+                  <button type="button" className="btn btn-ghost" onClick={() => removeTab(i)} aria-label="Usuń zakładkę">🗑️</button>
+                </div>
+                <textarea
+                  value={tab.body}
+                  onChange={(e) => updateTab(i, 'body', e.target.value)}
+                  rows={4}
+                  placeholder="Treść zakładki — np. cennik, co jest wliczone, wymogi bezpieczeństwa..."
+                />
+              </div>
+            ))}
+            {fieldErrors.tabs && <span style={{ color: 'var(--danger)', fontSize: 12 }}>{fieldErrors.tabs}</span>}
+            <button type="button" className="btn btn-secondary" onClick={addTab} style={{ alignSelf: 'flex-start' }}>+ DODAJ ZAKŁADKĘ</button>
+          </div>
         </div>
 
         <div className="field">

@@ -6,9 +6,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Pulpit', icon: '⌂', end: true },
   { to: '/products', label: 'Produkty', icon: '▤' },
   { to: '/orders', label: 'Zamówienia', icon: '⛁' },
-  { to: '/customers', label: 'Klienci', icon: '☺' },
   { to: '/events', label: 'Wydarzenia', icon: '◈' },
-  { to: '/reviews', label: 'Opinie', icon: '★' },
   { to: '/gallery', label: 'Galeria', icon: '▦' },
   { to: '/settings', label: 'Ustawienia', icon: '⚙' },
 ];

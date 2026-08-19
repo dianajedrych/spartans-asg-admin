@@ -38,6 +38,8 @@ export function ProductWizard() {
   // Krok 2
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
+  const [addingNewBrand, setAddingNewBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
   const [sku, setSku] = useState('');
   // Krok 3
   const [basePrice, setBasePrice] = useState('');
@@ -171,6 +173,20 @@ export function ProductWizard() {
   }
   function goBack() { setFieldErrors({}); setStep((s) => Math.max(s - 1, 0)); }
 
+  // Zwraca id marki do zapisu w produkcie — jeśli właściciel wpisał nową
+  // markę, najpierw ją tworzy (albo znajduje istniejącą o tej samej nazwie,
+  // żeby literówka w wielkości liter nie tworzyła duplikatu).
+  async function resolveBrandId(): Promise<string | null> {
+    if (!addingNewBrand) return brandId || null;
+    const trimmed = newBrandName.trim();
+    if (!trimmed) return null;
+    const { data: existing } = await supabase.from('brands').select('id').ilike('name', trimmed).maybeSingle();
+    if (existing) return existing.id;
+    const { data: created, error } = await supabase.from('brands').insert({ name: trimmed }).select('id').single();
+    if (error) throw error;
+    return created.id;
+  }
+
   async function uploadPendingImages(productId: string) {
     for (let i = 0; i < images.length; i++) {
       const { file } = images[i];
@@ -196,6 +212,7 @@ export function ProductWizard() {
     setSaveError(null);
     try {
       const cleanSpecs = specs.filter((s) => s.name.trim() && s.value.trim());
+      const resolvedBrandId = await resolveBrandId();
 
       if (isEdit && id) {
         const { error: updateErr } = await supabase
@@ -204,7 +221,7 @@ export function ProductWizard() {
             name: name.trim(),
             sku: sku.trim() || null,
             category_id: categoryId || null,
-            brand_id: brandId || null,
+            brand_id: resolvedBrandId,
             base_price: parseFloat(basePrice),
             sale_price: onSale ? parseFloat(salePrice) : null,
             short_description: shortDescription || null,
@@ -240,7 +257,7 @@ export function ProductWizard() {
           p_sku: sku.trim() || null,
           p_short_description: shortDescription || null,
           p_description: description || null,
-          p_brand_id: brandId || null,
+          p_brand_id: resolvedBrandId,
           p_category_id: categoryId || null,
           p_base_price: parseFloat(basePrice),
           p_sale_price: onSale ? parseFloat(salePrice) : null,
@@ -350,10 +367,36 @@ export function ProductWizard() {
             )}
             <div className="field">
               <label htmlFor="brand">Marka</label>
-              <select id="brand" value={brandId} onChange={(e) => setBrandId(e.target.value)}>
-                <option value="">Wybierz markę</option>
-                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              {!addingNewBrand ? (
+                <select
+                  id="brand"
+                  value={brandId}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') { setAddingNewBrand(true); setBrandId(''); }
+                    else setBrandId(e.target.value);
+                  }}
+                >
+                  <option value="">Wybierz markę</option>
+                  {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  <option value="__new__">+ Dodaj nową markę…</option>
+                </select>
+              ) : (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    autoFocus
+                    value={newBrandName}
+                    onChange={(e) => setNewBrandName(e.target.value)}
+                    placeholder="Nazwa nowej marki"
+                    style={{ flex: 1 }}
+                  />
+                  <button type="button" className="btn btn-ghost" onClick={() => { setAddingNewBrand(false); setNewBrandName(''); }}>
+                    Anuluj
+                  </button>
+                </div>
+              )}
+              {!addingNewBrand && (
+                <span className="hint">Nie ma jeszcze tej marki na liście? Wybierz „+ Dodaj nową markę…”.</span>
+              )}
             </div>
             <div className="field">
               <label htmlFor="sku">SKU</label>

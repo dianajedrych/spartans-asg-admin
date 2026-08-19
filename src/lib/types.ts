@@ -21,6 +21,8 @@ export interface ProductListRow {
   is_bestseller: boolean;
   is_new: boolean;
   is_featured: boolean;
+  category_id: string | null;
+  brand_id: string | null;
   brands: { name: string } | null;
   categories: { name: string } | null;
   product_variants: { id: string; inventory: { quantity_on_hand: number; low_stock_threshold: number } | null }[];
@@ -112,27 +114,6 @@ export interface EventListRow {
   status: EventStatus;
   capacity: number | null;
 }
-
-// ETAP 12 — opinie produktowe
-export type ReviewStatus = 'pending' | 'published' | 'hidden';
-
-export interface ReviewListRow {
-  id: string;
-  rating: number;
-  title: string | null;
-  body: string | null;
-  author_name: string | null;
-  is_verified_purchase: boolean;
-  status: ReviewStatus;
-  created_at: string;
-  products: { name: string } | null;
-}
-
-export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
-  pending: '🟡 Oczekuje na moderację',
-  published: '🟢 Opublikowana',
-  hidden: '⚪ Ukryta',
-};
 
 // ETAP 13 — galeria
 export interface GalleryImageRow {

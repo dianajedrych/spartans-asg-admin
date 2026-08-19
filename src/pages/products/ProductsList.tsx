@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import type { ProductListRow } from '../../lib/types';
+import type { Brand, Category, ProductListRow } from '../../lib/types';
 
 type FilterKey = 'all' | 'active' | 'hidden' | 'out-of-stock' | 'low-stock';
 
@@ -15,28 +15,41 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export function ProductsList() {
   const [products, setProducts] = useState<ProductListRow[] | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = (searchParams.get('filter') as FilterKey) || 'all';
+  const [categoryId, setCategoryId] = useState('');
+  const [brandId, setBrandId] = useState('');
   const [confirmHideId, setConfirmHideId] = useState<string | null>(null);
 
   async function load() {
     setError(false);
-    const { data, error: err } = await supabase
-      .from('products')
-      .select(`
-        id, name, slug, sku, base_price, sale_price, is_active, is_bestseller, is_new, is_featured,
-        brands ( name ),
-        categories ( name ),
-        product_variants ( id, inventory ( quantity_on_hand, low_stock_threshold ) )
-      `)
-      .order('created_at', { ascending: false });
-    if (err) { setError(true); return; }
-    setProducts((data as unknown as ProductListRow[]) || []);
+    const [prodRes, catRes, brandRes] = await Promise.all([
+      supabase
+        .from('products')
+        .select(`
+          id, name, slug, sku, base_price, sale_price, is_active, is_bestseller, is_new, is_featured,
+          category_id, brand_id,
+          brands ( name ),
+          categories ( name ),
+          product_variants ( id, inventory ( quantity_on_hand, low_stock_threshold ) )
+        `)
+        .order('created_at', { ascending: false }),
+      supabase.from('categories').select('id, parent_id, name, sort_order').order('sort_order'),
+      supabase.from('brands').select('id, name').order('name'),
+    ]);
+    if (prodRes.error) { setError(true); return; }
+    setProducts((prodRes.data as unknown as ProductListRow[]) || []);
+    setCategories((catRes.data as Category[]) || []);
+    setBrands((brandRes.data as Brand[]) || []);
   }
 
   useEffect(() => { load(); }, []);
+
+  const topCategories = categories.filter((c) => !c.parent_id);
 
   function stockOf(p: ProductListRow) {
     return p.product_variants.reduce((sum, v) => sum + (v.inventory?.quantity_on_hand ?? 0), 0);
@@ -52,10 +65,16 @@ export function ProductsList() {
     if (filter === 'hidden') list = list.filter((p) => !p.is_active);
     if (filter === 'out-of-stock') list = list.filter((p) => stockOf(p) === 0);
     if (filter === 'low-stock') list = list.filter((p) => stockOf(p) > 0 && stockOf(p) <= lowStockThreshold(p));
+    if (categoryId) {
+      // Kategoria główna obejmuje też jej podkategorie.
+      const childIds = categories.filter((c) => c.parent_id === categoryId).map((c) => c.id);
+      list = list.filter((p) => p.category_id === categoryId || (p.category_id && childIds.includes(p.category_id)));
+    }
+    if (brandId) list = list.filter((p) => p.brand_id === brandId);
     const q = search.trim().toLowerCase();
     if (q) list = list.filter((p) => p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q) || (p.brands?.name || '').toLowerCase().includes(q));
     return list;
-  }, [products, filter, search]);
+  }, [products, filter, search, categoryId, brandId, categories]);
 
   async function toggleActive(p: ProductListRow) {
     const { error: err } = await supabase.from('products').update({ is_active: !p.is_active }).eq('id', p.id);
@@ -78,6 +97,22 @@ export function ProductsList() {
           placeholder="🔍 Szukaj produktu..."
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', minWidth: 240 }}
         />
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}
+        >
+          <option value="">Wszystkie kategorie</option>
+          {topCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select
+          value={brandId}
+          onChange={(e) => setBrandId(e.target.value)}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}
+        >
+          <option value="">Wszystkie marki</option>
+          {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {FILTERS.map((f) => (
             <button
