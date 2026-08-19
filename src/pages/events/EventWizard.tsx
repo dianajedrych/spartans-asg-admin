@@ -109,7 +109,8 @@ export function EventWizard() {
 
       navigate('/events');
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Nie udało się zapisać wydarzenia. Spróbuj ponownie.');
+      console.error(e);
+      setSaveError('Nie udało się zapisać wydarzenia. Sprawdź, czy wszystkie wymagane pola są uzupełnione, i spróbuj ponownie.');
     } finally {
       setSaving(false);
     }
