@@ -11,6 +11,14 @@ const SLOTS: { key: string; label: string; hint: string }[] = [
   { key: 'korengal-hero-thumb', label: 'Korengal — miniatura na liście wydarzeń', hint: 'Kafelek „KORENGAL" na liście najbliższych wydarzeń.' },
   { key: 'korengal-mapa-dojazd', label: 'Korengal — mapa dojazdu', hint: 'W zakładce „Mapa" na stronie wydarzenia Korengal.' },
   { key: 'about-img', label: 'Zdjęcie na stronie „O nas"', hint: 'Np. wnętrze sklepu albo zespół Spartans ASG.' },
+  { key: 'home-hero-bg', label: 'Strona główna — duże zdjęcie na samej górze', hint: 'Pełnoekranowe tło pod nagłówkiem „WEJDŹ DO GRY."' },
+  { key: 'home-wwd-sklep', label: 'Strona główna — kafelek „SKLEP ASG"', hint: 'Sekcja „CO ROBIMY?" na stronie głównej.' },
+  { key: 'home-wwd-wydarzenia', label: 'Strona główna — kafelek „WYDARZENIA"', hint: 'Sekcja „CO ROBIMY?" na stronie głównej.' },
+  { key: 'home-wwd-eventy', label: 'Strona główna — kafelek „EVENTY"', hint: 'Sekcja „CO ROBIMY?" na stronie głównej.' },
+  { key: 'home-wwd-serwis', label: 'Strona główna — kafelek „SERWIS"', hint: 'Sekcja „CO ROBIMY?" na stronie głównej.' },
+  { key: 'home-community-bg', label: 'Strona główna — zdjęcie społeczności', hint: 'Sekcja „TO NIE TYLKO ASG. TO LUDZIE, KTÓRZY TWORZĄ GRĘ."' },
+  { key: 'home-map-img', label: 'Mapka dojazdu do sklepu', hint: 'Sekcja Kontakt na stronie głównej — zamiast Google Maps.' },
+  { key: 'eventy-hero', label: 'Eventy — duże zdjęcie na górze strony', hint: 'Strona z ofertą na kawalerskie/panieńskie/firmowe.' },
 ];
 
 type Row = { key: string; storage_path: string | null };
