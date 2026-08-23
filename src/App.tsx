@@ -12,7 +12,7 @@ import { EventsList } from './pages/events/EventsList';
 import { EventWizard } from './pages/events/EventWizard';
 import { GalleryList } from './pages/gallery/GalleryList';
 import { GalleryAlbumDetail } from './pages/gallery/GalleryAlbumDetail';
-import { ComingSoon } from './pages/ComingSoon';
+import { SiteImages } from './pages/settings/SiteImages';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return (
@@ -39,7 +39,7 @@ export default function App() {
           <Route path="/events/:id" element={<Protected><EventWizard /></Protected>} />
           <Route path="/gallery" element={<Protected><GalleryList /></Protected>} />
           <Route path="/gallery/:id" element={<Protected><GalleryAlbumDetail /></Protected>} />
-          <Route path="/settings" element={<Protected><ComingSoon title="Ustawienia" /></Protected>} />
+          <Route path="/settings" element={<Protected><SiteImages /></Protected>} />
         </Routes>
       </HashRouter>
     </AuthProvider>
